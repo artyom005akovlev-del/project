@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro — таймер для работы</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #FDF8F0;
+            transition: background 0.3s ease;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600&display=swap');
+
+        .container {
+            position: relative;
+            text-align: center;
+            background: rgba(255, 248, 235, 0.9);
+            backdrop-filter: blur(2px);
+            padding: 40px 30px;
+            border-radius: 48px;
+            max-width: 550px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.02), 0 8px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Кнопка настроек — в правом верхнем углу, незаметная */
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 22px;
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #D1B894;
+            padding: 6px 10px;
+            border-radius: 30px;
+            transition: all 0.2s ease;
+            opacity: 0.55;
+            font-family: system-ui;
+            line-height: 1;
+        }
+
+        .settings-btn:hover {
+            opacity: 1;
+            color: #B8885A;
+            background: #F5E8DA;
+            transform: rotate(8deg);
+        }
+
+        /* Модальное окно (настройки) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #FFFBF5;
+            padding: 30px 28px;
+            border-radius: 36px;
+            width: 280px;
+            text-align: left;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.15);
+            border: 1px solid #F0E2D2;
+        }
+
+        .modal-content h3 {
+            font-size: 20px;
+            font-weight: 500;
+            color: #B47C44;
+            margin-bottom: 22px;
+            text-align: center;
+            letter-spacing: -0.2px;
+        }
+
+        .setting-row {
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .setting-row label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #9B7A5C;
+            flex: 1;
+        }
+
+        .setting-row input {
+            width: 85px;
+            padding: 8px 10px;
+            border: 1px solid #EADBC8;
+            border-radius: 28px;
+            font-size: 14px;
+            font-family: 'Inter', monospace;
+            text-align: center;
+            background: white;
+            color: #6E4A2A;
+            font-weight: 500;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .setting-row input:focus {
+            border-color: #D8B48C;
+            box-shadow: 0 0 0 2px rgba(216, 180, 140, 0.2);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .modal-buttons button {
+            background: transparent;
+            border: 1px solid #E2C7A8;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: 0.2s;
+            color: #B47C44;
+            font-weight: 500;
+        }
+
+        .modal-buttons button:first-child {
+            background: #F1E3D6;
+            border-color: #D8B48C;
+        }
+
+        .modal-buttons button:first-child:hover {
+            background: #EAD0B4;
+            color: #6E4A2A;
+        }
+
+        .modal-buttons button:last-child:hover {
+            background: #F5E6D3;
+        }
+
+        .mode {
+            font-size: 18px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #C29A6B;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .timer {
+            font-size: 140px;
+            font-weight: 500;
+            font-family: 'Inter', 'SF Mono', 'Courier New', monospace;
+            color: #D48C54;
+            margin: 20px 0;
+            line-height: 1.1;
+            letter-spacing: 6px;
+            font-feature-settings: 'tnum';
+            font-variant-numeric: tabular-nums;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin: 30px 0 20px;
+        }
+
+        .controls button {
+            background: transparent;
+            border: 1.5px solid #E2C7A8;
+            color: #B47C44;
+            font-size: 17px;
+            font-weight: 500;
+            padding: 10px 28px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .controls button:hover {
+            background: #F5E6D3;
+            border-color: #D8B48C;
+            color: #9B6A3C;
+            transform: translateY(-2px);
+        }
+
+        .controls button:disabled {
+            opacity: 0.35;
+            border-color: #E2D4C4;
+            color: #CBB295;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .phase-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 10px 0 5px;
+            flex-wrap: wrap;
+        }
+
+        .phase-btn {
+            background: #FFF6ED;
+            border: 1px solid #EADBC8;
+            color: #BE8A5A;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 18px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .phase-btn:hover {
+            background: #FCEAD9;
+            border-color: #D8B48C;
+            color: #A57244;
+            transform: translateY(-1px);
+        }
+
+        .phase-btn.active {
+            background: #EAD0B4;
+            border-color: #C99E72;
+            color: #6E4A2A;
+            font-weight: 600;
+            cursor: default;
+        }
+
+        .cycle-count {
+            margin-top: 28px;
+            font-size: 13px;
+            color: #D1B694;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 550px) {
+            .container {
+                padding: 35px 20px 25px;
+            }
+            .timer {
+                font-size: 82px;
+                letter-spacing: 3px;
+            }
+            .controls button {
+                padding: 8px 20px;
+                font-size: 15px;
+            }
+            .phase-btn {
+                padding: 6px 14px;
+                font-size: 12px;
+            }
+            .settings-btn {
+                top: 12px;
+                right: 14px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button class="settings-btn" id="settingsBtn" title="Настройки">⚙️</button>
+
+    <div class="mode" id="mode">работа</div>
+    <div class="timer" id="timer">25:00</div>
+
+    <div class="controls">
+        <button id="startBtn">Старт</button>
+        <button id="pauseBtn" disabled>Пауза</button>
+        <button id="resetBtn">Сброс</button>
+    </div>
+
+    <div class="phase-buttons">
+        <button class="phase-btn" data-mode="pomodoro">Работа</button>
+        <button class="phase-btn" data-mode="short_break">Короткий перерыв</button>
+        <button class="phase-btn" data-mode="long_break">Длинный перерыв</button>
+    </div>
+
+    <div class="cycle-count" id="cycleCount"></div>
+</div>
+
+<!-- Модальное окно настроек -->
+<div id="settingsModal" class="modal">
+    <div class="modal-content">
+        <h3>Настройки времени</h3>
+        <div class="setting-row">
+            <label>Работа (мин)</label>
+            <input type="number" id="pomodoroTime" min="1" max="99" value="25" step="1">
+        </div>
+        <div class="setting-row">
+            <label>Короткий перерыв (мин)</label>
+            <input type="number" id="shortBreakTime" min="1" max="30" value="5" step="1">
+        </div>
+        <div class="setting-row">
+            <label>Длинный перерыв (мин)</label>
+            <input type="number" id="longBreakTime" min="1" max="45" value="15" step="1">
+        </div>
+        <div class="modal-buttons">
+            <button id="saveSettingsBtn">Сохранить</button>
+            <button id="closeSettingsBtn">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<audio id="notificationSound" preload="auto">
+    <source src="{{ url_for('static', filename='sound.ogg') }}" type="audio/ogg">
+</audio>
+
+<script>
+    // Pomodoro — с настройками длительности (модальное окно)
+    let updateInterval = null;
+    let lastTime = '25:00';
+    let lastMode = 'pomodoro';
+
+    const modeNames = {
+        'pomodoro': 'работа',
+        'short_break': 'короткий перерыв',
+        'long_break': 'длинный перерыв'
+    };
+
+    function playNotification() {
+        const audio = document.getElementById('notificationSound');
+        if (!audio) return;
+        audio.currentTime = 0;
+        audio.play().catch(e => console.log('Звук: нужно взаимодействие со страницей'));
+    }
+
+    function updateActivePhaseButton(currentMode) {
+        document.querySelectorAll('.phase-btn').forEach(btn => {
+            if (btn.getAttribute('data-mode') === currentMode) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    function setMode(mode) {
+        fetch(`/set_mode/${mode}`)
+            .then(() => {
+                if (updateInterval) clearInterval(updateInterval);
+                updateInterval = setInterval(updateDisplay, 500);
+                updateDisplay();
+            })
+            .catch(err => console.log(err));
+    }
+
+    function updateDisplay() {
+        fetch('/get_time')
+            .then(response => response.json())
+            .then(data => {
+                const currentTime = data.time;
+                const currentMode = data.mode;
+                const isRunning = data.is_running;
+
+                if ((currentTime === '00:00' && lastTime !== '00:00') ||
+                    (currentMode !== lastMode)) {
+                    playNotification();
+                }
+                if (currentTime === '25:00' && lastTime !== '25:00' && currentMode === 'pomodoro' && lastMode === currentMode) {
+                    playNotification();
+                }
+
+                document.getElementById('timer').textContent = currentTime;
+                document.getElementById('mode').textContent = modeNames[currentMode] || 'работа';
+
+                document.getElementById('startBtn').disabled = isRunning;
+                document.getElementById('pauseBtn').disabled = !isRunning;
+
+                updateActivePhaseButton(currentMode);
+
+                fetch('/get_pomodoro_count')
+                    .then(res => res.json())
+                    .then(countData => {
+                        const cycleSpan = document.getElementById('cycleCount');
+                        if (cycleSpan && countData.count !== undefined) {
+                            cycleSpan.textContent = countData.count > 0 ? `🍅 × ${countData.count}` : '';
+                        }
+                    })
+                    .catch(() => {});
+
+                lastTime = currentTime;
+                lastMode = currentMode;
+            })
+            .catch(err => console.log('Ошибка:', err));
+    }
+
+    function startTimer() {
+        fetch('/start').then(() => {
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(updateDisplay, 500);
+            updateDisplay();
+        });
+    }
+
+    function pauseTimer() {
+        fetch('/pause').then(() => {
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = null;
+            updateDisplay();
+        });
+    }
+
+    function resetTimer() {
+        fetch('/reset').then(() => {
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = null;
+            updateDisplay();
+        });
+    }
+
+    // --- Настройки: модальное окно ---
+    const modal = document.getElementById('settingsModal');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const closeBtn = document.getElementById('closeSettingsBtn');
+    const saveBtn = document.getElementById('saveSettingsBtn');
+
+    const pomodoroInput = document.getElementById('pomodoroTime');
+    const shortInput = document.getElementById('shortBreakTime');
+    const longInput = document.getElementById('longBreakTime');
+
+    // Загрузить текущие настройки с сервера
+    function loadSettingsToModal() {
+        fetch('/get_settings')
+            .then(res => res.json())
+            .then(data => {
+                pomodoroInput.value = data.pomodoro_minutes;
+                shortInput.value = data.short_break_minutes;
+                longInput.value = data.long_break_minutes;
+            })
+            .catch(err => console.log('Ошибка загрузки настроек:', err));
+    }
+
+    // Открыть окно
+    settingsBtn.onclick = () => {
+        loadSettingsToModal();
+        modal.style.display = 'flex';
+    };
+
+    // Закрыть окно
+    closeBtn.onclick = () => {
+        modal.style.display = 'none';
+    };
+
+    // Сохранить настройки
+    saveBtn.onclick = () => {
+        const newSettings = {
+            pomodoro_minutes: parseInt(pomodoroInput.value, 10),
+            short_break_minutes: parseInt(shortInput.value, 10),
+            long_break_minutes: parseInt(longInput.value, 10)
+        };
+        fetch('/set_settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSettings)
+        })
+        .then(res => res.json())
+        .then(() => {
+            modal.style.display = 'none';
+            // После сохранения сбрасываем таймер до актуального режима с новым временем
+            fetch('/reset_to_current_mode')
+                .then(() => updateDisplay());
+        })
+        .catch(err => console.log('Ошибка сохранения:', err));
+    };
+
+    // Закрыть по клику вне окна
+    window.onclick = (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+    };
+
+    document.getElementById('startBtn').addEventListener('click', startTimer);
+    document.getElementById('pauseBtn').addEventListener('click', pauseTimer);
+    document.getElementById('resetBtn').addEventListener('click', resetTimer);
+
+    document.querySelectorAll('.phase-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const mode = btn.getAttribute('data-mode');
+            if (mode) setMode(mode);
+        });
+    });
+
+    updateDisplay();
+    setInterval(updateDisplay, 1000);
+</script>
+</body>
+</html>
